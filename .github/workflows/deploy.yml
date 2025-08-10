@@ -1,0 +1,178 @@
+name: CI/CD Pipeline - Laravel + React
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    name: Test Application
+    runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: testing
+          MYSQL_USER: test_user
+          MYSQL_PASSWORD: test_password
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # Backend Tests (PHP, Composer, Laravel)
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: 8.1
+        extensions: mbstring, mysql, gd, curl, xml, zip, intl, opcache
+        coverage: xdebug
+
+    - name: Copy Backend Environment
+      run: |
+        cd backend
+        cp .env.example .env
+        sed -i 's/DB_HOST=127.0.0.1/DB_HOST=127.0.0.1/' .env
+        sed -i 's/DB_DATABASE=laravel/DB_DATABASE=testing/' .env
+        sed -i 's/DB_USERNAME=root/DB_USERNAME=test_user/' .env
+        sed -i 's/DB_PASSWORD=/DB_PASSWORD=test_password/' .env
+        sed -i 's/DB_PORT=3306/DB_PORT=3306/' .env
+
+    - name: Install Backend Dependencies
+      run: |
+        cd backend
+        composer install --prefer-dist --no-progress --no-interaction
+
+    - name: Generate Application Key
+      run: |
+        cd backend
+        php artisan key:generate
+
+    - name: Run Backend Tests
+      run: |
+        cd backend
+        php artisan migrate --force
+        php artisan test --coverage
+
+    # Frontend Tests (Node.js, npm, React)
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+
+    - name: Install Frontend Dependencies
+      run: |
+        cd frontend
+        npm ci
+
+    - name: Run Frontend Tests
+      run: |
+        cd frontend
+        npm test -- --coverage --passWithNoTests --watchAll=false
+
+    - name: Build Frontend
+      run: |
+        cd frontend
+        npm run build
+
+  deploy:
+    name: Deploy to AWS EC2
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_KEY }}
+        port: ${{ secrets.EC2_PORT }}
+        script: |
+          echo "🚀 Starting deployment..."
+          
+          # Navigate to project directory
+          cd /var/www/admission-system
+          
+          # Pull latest code
+          echo "📥 Pulling latest code..."
+          git pull origin master
+          
+          # Backend deployment
+          echo "🔧 Deploying backend..."
+          cd backend
+          
+          # Install/update dependencies
+          composer install --no-dev --optimize-autoloader --no-interaction
+          
+          # Clear and cache configurations
+          php artisan config:clear
+          php artisan config:cache
+          php artisan route:clear
+          php artisan route:cache
+          php artisan view:clear
+          php artisan view:cache
+          
+          # Run migrations
+          php artisan migrate --force
+          
+          # Clear application cache
+          php artisan cache:clear
+          
+          # Set proper permissions
+          sudo chown -R www-data:www-data storage bootstrap/cache
+          sudo chmod -R 775 storage bootstrap/cache
+          
+          # Frontend deployment
+          echo "🎨 Deploying frontend..."
+          cd ../frontend
+          
+          # Install dependencies
+          npm ci --production
+          
+          # Build for production
+          npm run build
+          
+          # Copy build to backend public directory
+          sudo cp -r build/* ../backend/public/
+          
+          # Restart services
+          echo "🔄 Restarting services..."
+          sudo systemctl restart laravel-app
+          sudo systemctl reload nginx
+          
+          echo "✅ Deployment completed successfully!"
+          echo "🌐 Application is now live at: http://${{ secrets.EC2_HOST }}"
+
+  notify:
+    name: Notify Deployment Status
+    needs: [test, deploy]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Notify Success
+      if: success()
+      run: |
+        echo "🎉 CI/CD Pipeline completed successfully!"
+        echo "✅ Tests passed"
+        echo "✅ Deployment completed"
+        
+    - name: Notify Failure
+      if: failure()
+      run: |
+        echo "❌ CI/CD Pipeline failed!"
+        echo "Please check the logs for details"
