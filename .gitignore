@@ -1,0 +1,51 @@
+# Node modules
+node_modules/
+frontend/node_modules/
+**/node_modules/
+
+# Environment files
+.env
+backend/.env
+frontend/.env
+
+# Laravel specific
+backend/vendor/
+backend/storage/*.key
+backend/storage/logs/
+backend/storage/framework/cache/
+backend/storage/framework/sessions/
+backend/storage/framework/views/
+backend/bootstrap/cache/
+
+# Build directories
+frontend/build/
+backend/public/build/
+
+# IDE and OS files
+.DS_Store
+Thumbs.db
+*.log
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Cache files
+**/.cache/
+.eslintcache
+
+# Misc
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.tmp
+*.temp
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db 
