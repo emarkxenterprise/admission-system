@@ -2,7 +2,8 @@
 
 A comprehensive web application for managing university admissions with Laravel backend and React frontend.
 
-<!-- Trigger deployment update -->
+<!-- Deployment trigger - Updated workflow -->
+<!-- Last updated: 2025-01-27 -->
 
 ## Features
 
