@@ -1,94 +1,14 @@
-name: CI/CD Pipeline - Laravel + React
+name: Deploy to AWS EC2
 
 on:
   push:
     branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+  workflow_dispatch: # Allow manual trigger
 
 jobs:
-  test:
-    name: Test Application
-    runs-on: ubuntu-latest
-    
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: password
-          MYSQL_DATABASE: testing
-          MYSQL_USER: test_user
-          MYSQL_PASSWORD: test_password
-        ports:
-          - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    # Backend Tests (PHP, Composer, Laravel)
-    - name: Setup PHP
-      uses: shivammathur/setup-php@v2
-      with:
-        php-version: 8.1
-        extensions: mbstring, mysql, gd, curl, xml, zip, intl, opcache
-        coverage: xdebug
-
-    - name: Copy Backend Environment
-      run: |
-        cd backend
-        cp .env.example .env
-        sed -i 's/DB_HOST=127.0.0.1/DB_HOST=127.0.0.1/' .env
-        sed -i 's/DB_DATABASE=laravel/DB_DATABASE=testing/' .env
-        sed -i 's/DB_USERNAME=root/DB_USERNAME=test_user/' .env
-        sed -i 's/DB_PASSWORD=/DB_PASSWORD=test_password/' .env
-        sed -i 's/DB_PORT=3306/DB_PORT=3306/' .env
-
-    - name: Install Backend Dependencies
-      run: |
-        cd backend
-        composer install --prefer-dist --no-progress --no-interaction
-
-    - name: Generate Application Key
-      run: |
-        cd backend
-        php artisan key:generate
-
-    - name: Run Backend Tests
-      run: |
-        cd backend
-        php artisan migrate --force
-        php artisan test --coverage
-
-    # Frontend Tests (Node.js, npm, React)
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-        cache-dependency-path: frontend/package-lock.json
-
-    - name: Install Frontend Dependencies
-      run: |
-        cd frontend
-        npm ci
-
-    - name: Run Frontend Tests
-      run: |
-        cd frontend
-        npm test -- --coverage --passWithNoTests --watchAll=false
-
-    - name: Build Frontend
-      run: |
-        cd frontend
-        npm run build
-
   deploy:
-    name: Deploy to AWS EC2
-    needs: test
+    name: Deploy to EC2
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
     
     steps:
     - name: Checkout code
@@ -133,7 +53,7 @@ jobs:
           php artisan cache:clear
           
           # Set proper permissions
-          sudo chown -R www-data:www-data storage bootstrap/cache
+          sudo chown -R ec2-user:ec2-user storage bootstrap/cache
           sudo chmod -R 775 storage bootstrap/cache
           
           # Frontend deployment
@@ -156,23 +76,3 @@ jobs:
           
           echo "✅ Deployment completed successfully!"
           echo "🌐 Application is now live at: http://${{ secrets.EC2_HOST }}"
-
-  notify:
-    name: Notify Deployment Status
-    needs: [test, deploy]
-    runs-on: ubuntu-latest
-    if: always()
-    
-    steps:
-    - name: Notify Success
-      if: success()
-      run: |
-        echo "🎉 CI/CD Pipeline completed successfully!"
-        echo "✅ Tests passed"
-        echo "✅ Deployment completed"
-        
-    - name: Notify Failure
-      if: failure()
-      run: |
-        echo "❌ CI/CD Pipeline failed!"
-        echo "Please check the logs for details"

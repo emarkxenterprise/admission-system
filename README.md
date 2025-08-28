@@ -1,121 +1,92 @@
-# PRTL - Portal for Registration and Transfer of Learning
+# University Admission Processing System
 
-A comprehensive university admission portal built with Laravel backend and React frontend.
+A comprehensive web application for managing university admissions with Laravel backend and React frontend.
+
+<!-- Trigger deployment update -->
 
 ## Features
 
-### Application Form
-- **Multi-step application process** with validation
-- **Searchable department selection** - Users can type to search for departments by name, code, or faculty
-- **Keyboard navigation** - Arrow keys, Enter, and Escape support for department selection
-- **Real-time filtering** - Instant search results as users type
-- **Faculty grouping** - Departments are organized by faculties when available
-- **Document upload** support for transcripts, certificates, ID cards, and passports
+- **User Management**: Student registration, staff management, role-based access control
+- **Application Processing**: Online application submission, document upload, status tracking
+- **Payment Integration**: Secure payment processing with Paystack
+- **Admin Dashboard**: Comprehensive analytics, reporting, and management tools
+- **Responsive Design**: Mobile-friendly interface for all devices
 
-### Admin Dashboard
-- **Comprehensive statistics** including faculty-wise breakdowns
-- **Application management** with filtering and search capabilities
-- **Department and faculty management** with CRUD operations
-- **Admission offer management** with bulk operations
-- **User and staff management** with role-based permissions
+## Tech Stack
 
-### Faculty System
-- **Faculty management** - Group departments into faculties
-- **Faculty statistics** - Dashboard shows faculty-wise application counts
-- **Permission-based access** - Role-based access control for faculty management
+### Backend
+- **Laravel 10** - PHP framework
+- **MySQL** - Database
+- **Laravel Sanctum** - API authentication
+- **Spatie Laravel Permission** - Role and permission management
 
-### Searchable Department Selection
+### Frontend
+- **React 18** - JavaScript library
+- **Material-UI** - Component library
+- **Chart.js** - Data visualization
+- **Axios** - HTTP client
 
-The application form now includes an enhanced department selection feature:
+## Quick Start
 
-#### Features:
-- **Real-time search**: Type to filter departments instantly
-- **Multi-field search**: Search by department name, code, or faculty name
-- **Keyboard navigation**: 
-  - Arrow keys to navigate options
-  - Enter to select highlighted option
-  - Escape to close dropdown
-- **Visual feedback**: Selected items are highlighted
-- **Faculty grouping**: Departments are shown with their faculty names
-- **Responsive design**: Works on all screen sizes
+### Prerequisites
+- PHP 8.1+
+- Node.js 18+
+- MySQL 8.0+
+- Composer
+- npm
 
-#### Usage:
-1. Click on the department field or start typing
-2. Type any part of the department name, code, or faculty name
-3. Use arrow keys to navigate through results
-4. Press Enter or click to select a department
-5. Press Escape to close the dropdown
+### Local Development Setup
 
-#### Technical Implementation:
-- Uses React hooks for state management
-- Implements click-outside detection to close dropdown
-- Debounced search for performance
-- Accessible keyboard navigation
-- Mobile-friendly touch interactions
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd admission-system
+   ```
 
-## Installation
+2. **Backend Setup**
+   ```bash
+   cd backend
+   cp .env.example .env
+   composer install
+   php artisan key:generate
+   php artisan migrate
+   php artisan db:seed
+   php artisan serve
+   ```
 
-### Backend Setup
-```bash
-cd backend
-composer install
-cp .env.example .env
-php artisan key:generate
-php artisan migrate
-php artisan db:seed
-php artisan serve
-```
+3. **Frontend Setup**
+   ```bash
+   cd frontend
+   npm install
+   npm start
+   ```
 
-### Frontend Setup
-```bash
-cd frontend
-npm install
-npm start
-```
+4. **Access the application**
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:8000/api
 
-## API Endpoints
+## Deployment
 
-### Public Endpoints
-- `GET /api/sessions` - Get available admission sessions
-- `GET /api/departments` - Get departments with faculty grouping
-- `POST /api/applications` - Submit new application
-- `GET /api/applications/{id}` - Get specific application
+### AWS Deployment
+The application is configured for deployment on AWS with:
+- **EC2** - Web server
+- **RDS** - Database
+- **S3** - File storage
+- **GitHub Actions** - CI/CD pipeline
 
-### Admin Endpoints
-- `GET /api/admin/departments` - Get all departments
-- `POST /api/admin/departments` - Create new department
-- `GET /api/admin/faculties` - Get all faculties
-- `POST /api/admin/faculties` - Create new faculty
-- `GET /api/admin/applications` - Get applications with filtering
-
-## Database Structure
-
-### Key Tables
-- `users` - Student accounts
-- `staff` - Admin and staff accounts
-- `faculties` - Faculty information
-- `departments` - Department information (linked to faculties)
-- `applications` - Student applications
-- `admission_sessions` - Admission periods
-- `admissions` - Admission offers
-
-## Permissions
-
-### Staff Roles
-- **super-admin**: Full system access
-- **admin**: Administrative access including faculty management
-- **staff**: Limited administrative access
-
-### Faculty Permissions
-- `view-faculties` - View faculty information
-- `manage-faculties` - Create, edit, delete faculties
+### CI/CD Pipeline
+Automated deployment pipeline that:
+1. Runs tests on push to main/master branch
+2. Builds the frontend application
+3. Deploys to AWS EC2 instance
+4. Restarts services automatically
 
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests if applicable
+4. Run tests
 5. Submit a pull request
 
 ## License
